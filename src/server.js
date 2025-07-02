@@ -36,6 +36,17 @@ wss.on("connection", (ws) => {
   ws.on("message", (data) => {
     let res = JSON.parse(data);
     console.log("res", res);
+
+    if (res.type == "saveDoc") {
+      console.log("dust");
+      connection.query(
+        `update googlydocs set content='${res.payload}' where docid='${ws.docId}';`,
+        (err, out) => {
+          console.log("error : ", err, "out : ", out);
+        }
+      );
+    }
+
     if (res.type == "docId") ws.docId = res.docId;
   });
 
@@ -51,7 +62,6 @@ wss.on("connection", (ws) => {
 
   ws.on("message", (data) => {
     let inp = JSON.parse(data);
-    console.log(inp);
     wss.clients.forEach((socket) => {
       if (socket != ws && socket.docId == ws.docId)
         socket.send(JSON.stringify(inp));
