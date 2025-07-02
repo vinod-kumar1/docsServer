@@ -35,7 +35,7 @@ let wss = new WebSocketServer({ server: httpServer });
 wss.on("connection", (ws) => {
   ws.on("message", (data) => {
     let res = JSON.parse(data);
-    console.log("res", res);
+    // console.log("res", res);
 
     if (res.type == "saveDoc") {
       console.log("dust");
@@ -45,9 +45,22 @@ wss.on("connection", (ws) => {
           console.log("error : ", err, "out : ", out);
         }
       );
+    } else if (res.type == "docId") ws.docId = res.docId;
+    else if (res.type == "getDoc") {
+      console.log("tester", ws.docId);
+      connection.query(
+        `select content from googlydocs where docid='${ws.docId}';`,
+        (err, out) => {
+          if (err) console.log("err", err);
+          else {
+            console.log(out);
+            ws.send(
+              JSON.stringify({ type: "getDoc", payload: out[0].content })
+            );
+          }
+        }
+      );
     }
-
-    if (res.type == "docId") ws.docId = res.docId;
   });
 
   rl.on("line", (input) => {
@@ -63,7 +76,7 @@ wss.on("connection", (ws) => {
   ws.on("message", (data) => {
     let inp = JSON.parse(data);
     wss.clients.forEach((socket) => {
-      if (socket != ws && socket.docId == ws.docId)
+      if (socket != ws && socket.docId == ws.docId && inp.type == "DOC-CHANGE")
         socket.send(JSON.stringify(inp));
     });
   });
